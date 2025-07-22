@@ -1,0 +1,50 @@
+name: Build BlackThunder OS for Redmi 10C
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install openjdk-11-jdk git-core gnupg flex bison build-essential zip curl zlib1g-dev gcc-multilib \
+            g++-multilib libc6-dev-i386 lib32ncurses5-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python-is-python3 -y
+          java -version
+
+      - name: Install Repo
+        run: |
+          mkdir -p ~/bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+          chmod a+x ~/bin/repo
+          echo 'export PATH=~/bin:$PATH' >> ~/.bashrc
+          source ~/.bashrc
+
+      - name: Init BlackThunder Source
+        run: |
+          mkdir -p ~/blackthunder && cd ~/blackthunder
+          repo init -u https://github.com/LineageOS/android.git -b lineage-20.0 --depth=1
+          repo sync -c --no-tags --no-clone-bundle --optimized-fetch --prune -j4
+
+      - name: Clone Device Tree for Redmi 10C
+        run: |
+          cd ~/blackthunder
+          git clone https://github.com/AlaskaProjects/android_device_xiaomi_fog device/xiaomi/fog
+          git clone https://github.com/TheMuppets/proprietary_vendor_xiaomi vendor/xiaomi/fog
+          git clone https://github.com/AlaskaProjects/android_kernel_xiaomi_fog kernel/xiaomi/fog
+
+      - name: Set Up Environment & Build
+        run: |
+          cd ~/blackthunder
+          source build/envsetup.sh
+          lunch lineage_fog-userdebug
+          mka bacon -j4
+
+      - name: Upload ROM to GitHub Artifacts (TEMP)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BlackThunder-Redmi10C
+          path: ~/blackthunder/out/target/product/fog/*.zip
