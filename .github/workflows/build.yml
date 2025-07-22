@@ -9,19 +9,19 @@ jobs:
     steps:
       - name: Setup dependencies
         run: |
+          sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install openjdk-11-jdk git-core gnupg flex bison build-essential zip curl zlib1g-dev gcc-multilib \
-            g++-multilib libc6-dev-i386 lib32ncurses5-dev lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python-is-python3 -y
-          java -version
+          sudo apt-get install openjdk-11-jdk git-core gnupg flex bison build-essential zip curl zlib1g-dev \
+            gcc-multilib g++-multilib libc6-dev-i386 libncurses5-dev libncurses5-dev:i386 \
+            lib32z1-dev libgl1-mesa-dev libxml2-utils xsltproc unzip fontconfig python-is-python3 -y
 
-      - name: Install Repo (persistent for GitHub)
+      - name: Install repo tool
         run: |
-         curl https://storage.googleapis.com/git-repo-downloads/repo > repo
-         chmod a+x repo
-         sudo mv repo /usr/local/bin/repo
+          curl https://storage.googleapis.com/git-repo-downloads/repo > repo
+          chmod a+x repo
+          sudo mv repo /usr/local/bin/repo
 
-
-      - name: Init BlackThunder Source
+      - name: Initialize BlackThunder Source
         run: |
           mkdir -p ~/blackthunder && cd ~/blackthunder
           repo init -u https://github.com/LineageOS/android.git -b lineage-20.0 --depth=1
@@ -34,16 +34,16 @@ jobs:
           git clone https://github.com/TheMuppets/proprietary_vendor_xiaomi vendor/xiaomi/fog
           git clone https://github.com/AlaskaProjects/android_kernel_xiaomi_fog kernel/xiaomi/fog
 
-      - name: Set Up Environment & Build
+      - name: Setup build environment and compile
         run: |
           cd ~/blackthunder
           source build/envsetup.sh
           lunch lineage_fog-userdebug
           mka bacon -j4
 
-      - name: Upload ROM to GitHub Artifacts (TEMP)
+      - name: Upload ROM as GitHub Artifact
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: BlackThunder-Redmi10C
+          name: BlackThunder-Redmi10C-ROM
           path: ~/blackthunder/out/target/product/fog/*.zip
